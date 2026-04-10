@@ -1,0 +1,24 @@
+1.Failed Login:
+index="main" "Failed password"
+
+2.Brute Force:
+index="main" "Failed password"
+| rex "from (?<src_ip>\d+\.\d+\.\d+\.\d+)"
+| stats count by src_ip
+| where count > 5
+
+3.Successful Login:
+index="main" "Accepted password"
+
+4.Critical Detection:
+index="main" ("Failed password" OR "Accepted password")
+| rex "from (?<src_ip>\d+\.\d+\.\d+\.\d+)"
+| eval status=if(searchmatch("Failed password"), "failed", "success")
+| stats count(eval(status="failed")) as failed_attempts, count(eval(status="success")) as successful_logins by src_ip
+| where failed_attempts > 5 AND successful_logins > 0
+
+5.High Severity:
+index="main" "Failed password"
+| rex "from (?<src_ip>\d+\.\d+\.\d+\.\d+)"
+| stats count by src_ip
+| where count >= 10
